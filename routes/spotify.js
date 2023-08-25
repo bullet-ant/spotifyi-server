@@ -24,10 +24,9 @@ const fetchToken = async () => {
       headers: authOptions.headers,
       params: authOptions.form,
     });
-    console.log(`response: `, response);
+    console.log(`response: `, response.statusText);
     if (response.status === 200) {
       const token = response.data.access_token;
-      console.log(`token: ${token}`);
       process.env.TOKEN = token;
       return token;
     } else {
@@ -41,6 +40,7 @@ const fetchToken = async () => {
 const fetchSpotifyApi = async (endpoint, method, body) => {
   const token = await fetchToken();
   try {
+    console.log(`gathering tracks from Spotify...`);
     const res = await fetch(`https://api.spotify.com/${endpoint}`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -48,6 +48,7 @@ const fetchSpotifyApi = async (endpoint, method, body) => {
       method,
       body: JSON.stringify(body),
     });
+    console.log(`response: ${res.statusText}`);
     return await res.json();
   } catch (error) {
     console.error(`error: ${error.message}`);
@@ -86,7 +87,7 @@ const logTrackInfo = (metadatas) => {
   } else {
     metadatas.forEach((metadata) => console.log(formatMetadata(metadata)));
   }
-  console.log()
+  console.log();
 };
 
 router.route("/spotify/track/:id").get(async (req, res) => {
@@ -99,6 +100,7 @@ router.route("/spotify/track/:id").get(async (req, res) => {
 
     res.json(tracks);
   } catch (e) {
+    console.error(`error occurred: `, e.message);
     res.status(500).send({ error: e.message });
   }
 });
@@ -113,6 +115,7 @@ router.route("/spotify/tracks/:ids").get(async (req, res) => {
 
     res.json(tracks);
   } catch (e) {
+    console.error(`error occurred: `, e.message);
     res.status(500).send({ error: e.message });
   }
 });
@@ -129,6 +132,7 @@ router.route("/spotify/playlist/:id").get(async (req, res) => {
 
     res.json(tracks);
   } catch (e) {
+    console.error(`error occurred: `, e.message);
     res.status(500).send({ error: e.message });
   }
 });
@@ -139,10 +143,17 @@ router.route("/spotify/album/:id").get(async (req, res) => {
     console.log(`fetching metadata for album - ${id}`);
 
     const album = await fetchSpotifyApi(`v1/albums/${id}`, "GET");
-    const tracks = extractTracks(album);
+    album.tracks.items.forEach((item) => {
+      item.album = {};
+      item.album.name = album.name;
+      item.album.images = album.images;
+      item.album.release_date = album.release_date;
+    });
+    const tracks = extractTracks(album.tracks.items);
 
     res.json(tracks);
   } catch (e) {
+    console.error(`error occurred: `, e.message);
     res.status(500).send({ error: e.message });
   }
 });
