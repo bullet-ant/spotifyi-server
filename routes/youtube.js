@@ -16,26 +16,26 @@ const handleDownload = (stream, output) => {
     starttime = Date.now();
   });
 
-  stream.on("progress", (chunkLength, downloaded, total) => {
-    const percent = downloaded / total;
-    const downloadedMinutes = (Date.now() - starttime) / 1000 / 60;
-    const estimatedDownloadTime =
-      downloadedMinutes / percent - downloadedMinutes;
-    readline.cursorTo(process.stdout, 0);
-    process.stdout.write(`${(percent * 100).toFixed(2)}% downloaded `);
-    process.stdout.write(
-      `(${(downloaded / 1024 / 1024).toFixed(2)}MB of ${(
-        total /
-        1024 /
-        1024
-      ).toFixed(2)}MB)\n`
-    );
-    process.stdout.write(`running for: ${downloadedMinutes.toFixed(2)}minutes`);
-    process.stdout.write(
-      `, estimated time left: ${estimatedDownloadTime.toFixed(2)}minutes `
-    );
-    readline.moveCursor(process.stdout, 0, -1);
-  });
+  // stream.on("progress", (chunkLength, downloaded, total) => {
+  //   const percent = downloaded / total;
+  //   const downloadedMinutes = (Date.now() - starttime) / 1000 / 60;
+  //   const estimatedDownloadTime =
+  //     downloadedMinutes / percent - downloadedMinutes;
+  //   readline.cursorTo(process.stdout, 0);
+  //   process.stdout.write(`${(percent * 100).toFixed(2)}% downloaded `);
+  //   process.stdout.write(
+  //     `(${(downloaded / 1024 / 1024).toFixed(2)}MB of ${(
+  //       total /
+  //       1024 /
+  //       1024
+  //     ).toFixed(2)}MB)\n`
+  //   );
+  //   process.stdout.write(`running for: ${downloadedMinutes.toFixed(2)}minutes`);
+  //   process.stdout.write(
+  //     `, estimated time left: ${estimatedDownloadTime.toFixed(2)}minutes `
+  //   );
+  //   readline.moveCursor(process.stdout, 0, -1);
+  // });
 };
 
 const getVideoId = async (name, artists) => {
@@ -45,7 +45,7 @@ const getVideoId = async (name, artists) => {
     }&q=${name.replace(/ /g, "+")}+by+${artists[0].replace(
       / /g,
       "+"
-    )}&type=video`;
+    )}+official+audio&type=video`;
 
     console.log(`searching YouTube for song - ${name} by ${artists[0]}`);
     const searchResults = await axios.get(url);
@@ -66,10 +66,10 @@ router.route("/youtube/download/").post(async (req, res) => {
   const output = `/tmp/${name} (${artists[0]}).m4a`;
 
   console.log(
-    `verifying if ${name} by ${artists.join(", ")} is already downloaded...`
+    `checking if ${name} by ${artists.join(", ")} is already downloaded...`
   );
   if (fs.existsSync(output)) {
-    console.log("song already present!");
+    console.log("song already present!\n");
     res.download(output, `${name}.m4a`, (err) => {
       if (err) res.status(500).send({ error: err.message });
     });
@@ -87,7 +87,7 @@ router.route("/youtube/download/").post(async (req, res) => {
     handleDownload(stream, output);
 
     stream.on("end", () => {
-      process.stdout.write("\n\n");
+      process.stdout.write("download complete.\n\n");
       res.download(output, `${name}.m4a`, (err) => {
         if (err) res.status(500).send({ error: err.message });
       });
